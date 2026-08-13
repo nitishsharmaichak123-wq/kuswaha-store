@@ -65,6 +65,24 @@
     background:linear-gradient(180deg,rgba(20,10,0,0.15) 0%,rgba(20,10,0,0.75) 100%);
   }
   .hero-content{position:absolute;left:0;right:0;bottom:16px;padding:0 20px;color:#fff;}
+  .offer-banner{
+    margin:14px 16px 0; padding:13px 16px; border-radius:14px;
+    background:linear-gradient(135deg,#ffb703,#e8622c 60%,#a8331a);
+    color:#fff; display:flex; align-items:center; gap:10px;
+    box-shadow:0 4px 14px rgba(184,71,28,0.35);
+  }
+  .offer-banner .oi{font-size:22px;}
+  .offer-banner .ot{font-size:13.5px; font-weight:700; line-height:1.35;}
+  .offer-poster{margin:14px 16px 0; border-radius:16px; overflow:hidden; display:none;}
+  .offer-poster img{width:100%; display:block; border-radius:16px;}
+  .offer-edit-box{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:0 16px 16px;}
+  .offer-toggle-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .switch{position:relative; width:44px; height:24px;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .slider{position:absolute; inset:0; background:#ddd; border-radius:24px; cursor:pointer; transition:0.2s;}
+  .switch .slider:before{content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.2s;}
+  .switch input:checked + .slider{background:var(--leaf);}
+  .switch input:checked + .slider:before{transform:translateX(20px);}
   .hero-eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:4px;}
   .hero-title{font-family:Georgia,"Noto Serif",serif;font-size:26px;margin:0 0 6px;}
   .hero-tag{font-size:13px;background:rgba(255,255,255,0.18);backdrop-filter:blur(4px);display:inline-block;padding:5px 12px;border-radius:20px;font-weight:600;}
@@ -270,6 +288,21 @@
     </div>
   </div>
 
+  <div id="offerBanner" class="offer-banner hidden">
+    <div class="oi">🪔</div>
+    <div class="ot" id="offerText"></div>
+  </div>
+
+  <div id="offerPosterWrap" class="offer-poster">
+    <img id="offerPosterImg" src="" alt="Special Offer"
+      onload="document.getElementById('offerPosterWrap').style.display='block';"
+      onerror="document.getElementById('offerPosterWrap').style.display='none';">
+  </div>
+
+  <script>
+    document.getElementById('offerPosterImg').src = 'offer.jpg?t=' + Date.now();
+  </script>
+
   <div class="search-wrap">
     <div class="search-box">
       <span>🔍</span>
@@ -394,6 +427,18 @@
       <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-lb">Total product</div></div>
     </div>
 
+    <div class="offer-edit-box">
+      <div class="offer-toggle-row">
+        <label style="margin:0;">🪔 Special Offer Banner</label>
+        <label class="switch">
+          <input type="checkbox" id="offerToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <input type="text" id="offerTextInput" placeholder="Jaise: Diwali Dhamaka! Sabhi product par 10% chhoot">
+      <button class="btn btn-saffron btn-sm" id="offerSaveBtn" style="width:auto; padding:9px 16px;">Offer Save karo</button>
+    </div>
+
     <div class="cat-tabs">
       <div class="cat-tab active c-kirana" data-ocat="kirana"><div class="ic">🌾</div><div class="lb">Kirana</div></div>
       <div class="cat-tab c-fastfood" data-ocat="fastfood"><div class="ic">🍔</div><div class="lb">Fast Food</div></div>
@@ -472,6 +517,7 @@ let pendingPhotoData = "";
 let userLocation = null;
 let timerInterval = null;
 let myOrders = [];
+let offer = { active:false, text:"" };
 
 /* ===================== STORAGE ===================== */
 /* Products & Orders sync via Firebase (shared across every phone).
@@ -506,6 +552,16 @@ async function fbSet(path, value){
   }catch(e){}
 }
 
+function renderOfferBanner(){
+  const banner = document.getElementById('offerBanner');
+  if(offer && offer.active && offer.text){
+    document.getElementById('offerText').textContent = offer.text;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
 async function loadData(){
   products = await fbGet('products', null);
   if(!products || products.length===0){
@@ -513,17 +569,20 @@ async function loadData(){
     fbSet('products', products);
   }
   orders = await fbGet('orders', []);
+  offer = await fbGet('offer', { active:false, text:"" });
   favorites = lsGet('kgs_favorites', []);
   ownerLoggedIn = lsGet('kgs_ownerSession', false) === true;
   myOrders = lsGet('kgs_myOrders', []);
 
   renderProductGrid();
+  renderOfferBanner();
 }
 async function saveOwnerSession(val){ lsSet('kgs_ownerSession', val); }
 async function saveProducts(){ await fbSet('products', products); }
 async function saveOrders(){ await fbSet('orders', orders); }
 async function saveFavorites(){ lsSet('kgs_favorites', favorites); }
 async function saveMyOrders(){ lsSet('kgs_myOrders', myOrders); }
+async function saveOffer(){ await fbSet('offer', offer); }
 
 /* Background refresh so other phones' changes show up without
    needing a manual reload. */
@@ -532,7 +591,9 @@ setInterval(async ()=>{
   if(freshProducts) products = freshProducts;
   const freshOrders = await fbGet('orders', null);
   if(freshOrders) orders = freshOrders;
-  if(currentView === 'home') renderProductGrid();
+  const freshOffer = await fbGet('offer', null);
+  if(freshOffer) offer = freshOffer;
+  if(currentView === 'home'){ renderProductGrid(); renderOfferBanner(); }
   if(currentView === 'owner' && ownerLoggedIn){ renderOwnerProductList(); renderOwnerOrders(); renderOwnerStats(); }
 }, 15000);
 
@@ -639,6 +700,7 @@ function switchView(view){
   currentView = view;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
   document.querySelector('.hero').classList.toggle('hidden', view!=='home');
+  if(view==='home'){ renderOfferBanner(); document.getElementById('offerPosterImg').src = 'offer.jpg?t=' + Date.now(); } else { document.getElementById('offerBanner').classList.add('hidden'); document.getElementById('offerPosterWrap').style.display='none'; }
   document.querySelector('.search-wrap').classList.toggle('hidden', view!=='home');
   document.querySelector('.cat-tabs').classList.toggle('hidden', view!=='home');
   document.querySelector('.section-title').classList.toggle('hidden', view!=='home');
@@ -827,12 +889,16 @@ document.getElementById('ownerLogout').addEventListener('click', ()=>{
 /* ===================== OWNER DASHBOARD ===================== */
 function showOwnerDash(){
   document.querySelector('.hero').classList.add('hidden');
+  document.getElementById('offerBanner').classList.add('hidden');
+  document.getElementById('offerPosterWrap').style.display='none';
   document.querySelector('.search-wrap').classList.add('hidden');
   document.querySelector('.cat-tabs').classList.add('hidden');
   document.querySelector('.section-title').classList.add('hidden');
   document.getElementById('productGrid').classList.add('hidden');
   document.getElementById('favView').classList.add('hidden');
   document.getElementById('ownerDash').classList.remove('hidden');
+  document.getElementById('offerToggle').checked = !!offer.active;
+  document.getElementById('offerTextInput').value = offer.text || '';
   renderOwnerStats();
   renderOwnerProductList();
   renderOwnerOrders();
@@ -901,6 +967,16 @@ function renderOwnerOrders(){
 }
 
 /* ===================== ADD/EDIT PRODUCT FORM ===================== */
+document.getElementById('offerSaveBtn').addEventListener('click', async ()=>{
+  offer = {
+    active: document.getElementById('offerToggle').checked,
+    text: document.getElementById('offerTextInput').value.trim()
+  };
+  await saveOffer();
+  renderOfferBanner();
+  toast(offer.active ? 'Offer chalu ho gaya!' : 'Offer band kar diya');
+});
+
 document.getElementById('addProductFab').addEventListener('click', ()=>{
   const count = products.filter(p=>p.cat===currentOwnerCat).length;
   if(count >= CAT_LIMITS[currentOwnerCat]){
