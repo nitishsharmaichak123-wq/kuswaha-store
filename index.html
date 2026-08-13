@@ -75,6 +75,19 @@
   .offer-banner .ot{font-size:13.5px; font-weight:700; line-height:1.35;}
   .offer-poster{margin:14px 16px 0; border-radius:16px; overflow:hidden; display:none;}
   .offer-poster img{width:100%; display:block; border-radius:16px;}
+
+  .offer-popup-backdrop{
+    position:fixed; inset:0; background:rgba(20,12,4,0.72); z-index:180;
+    display:none; align-items:center; justify-content:center; padding:24px 16px;
+  }
+  .offer-popup-backdrop.show{display:flex;}
+  .offer-popup{position:relative; max-width:400px; width:100%;}
+  .offer-popup img{width:100%; display:block; border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+  .offer-popup-close{
+    position:absolute; top:-14px; right:-14px; width:38px; height:38px; border-radius:50%;
+    background:#fff; color:var(--ink); border:none; font-size:18px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  }
   .offer-edit-box{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:0 16px 16px;}
   .offer-toggle-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
   .switch{position:relative; width:44px; height:24px;}
@@ -293,14 +306,24 @@
     <div class="ot" id="offerText"></div>
   </div>
 
-  <div id="offerPosterWrap" class="offer-poster">
-    <img id="offerPosterImg" src="" alt="Special Offer"
-      onload="document.getElementById('offerPosterWrap').style.display='block';"
-      onerror="document.getElementById('offerPosterWrap').style.display='none';">
+  <!-- hidden probe image: just checks whether offer.jpg exists -->
+  <img id="offerPosterImg" src="" alt="" style="display:none;"
+    onload="showOfferPopup();"
+    onerror="document.getElementById('offerPopupBackdrop').classList.remove('show');">
+
+  <div id="offerPopupBackdrop" class="offer-popup-backdrop">
+    <div class="offer-popup">
+      <button class="offer-popup-close" id="offerPopupClose">✕</button>
+      <img id="offerPopupImg" src="" alt="Special Offer">
+    </div>
   </div>
 
   <script>
     document.getElementById('offerPosterImg').src = 'offer.jpg?t=' + Date.now();
+    function showOfferPopup(){
+      document.getElementById('offerPopupImg').src = document.getElementById('offerPosterImg').src;
+      document.getElementById('offerPopupBackdrop').classList.add('show');
+    }
   </script>
 
   <div class="search-wrap">
@@ -700,7 +723,7 @@ function switchView(view){
   currentView = view;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
   document.querySelector('.hero').classList.toggle('hidden', view!=='home');
-  if(view==='home'){ renderOfferBanner(); document.getElementById('offerPosterImg').src = 'offer.jpg?t=' + Date.now(); } else { document.getElementById('offerBanner').classList.add('hidden'); document.getElementById('offerPosterWrap').style.display='none'; }
+  if(view==='home'){ renderOfferBanner(); } else { document.getElementById('offerBanner').classList.add('hidden'); }
   document.querySelector('.search-wrap').classList.toggle('hidden', view!=='home');
   document.querySelector('.cat-tabs').classList.toggle('hidden', view!=='home');
   document.querySelector('.section-title').classList.toggle('hidden', view!=='home');
@@ -890,7 +913,6 @@ document.getElementById('ownerLogout').addEventListener('click', ()=>{
 function showOwnerDash(){
   document.querySelector('.hero').classList.add('hidden');
   document.getElementById('offerBanner').classList.add('hidden');
-  document.getElementById('offerPosterWrap').style.display='none';
   document.querySelector('.search-wrap').classList.add('hidden');
   document.querySelector('.cat-tabs').classList.add('hidden');
   document.querySelector('.section-title').classList.add('hidden');
@@ -1069,6 +1091,13 @@ setTimeout(()=>{ document.getElementById('splash').style.display='none'; }, 3200
 document.getElementById('splash').addEventListener('click', ()=>{ document.getElementById('splash').style.display='none'; });
 
 /* ===================== INIT ===================== */
+document.getElementById('offerPopupClose').addEventListener('click', ()=>{
+  document.getElementById('offerPopupBackdrop').classList.remove('show');
+});
+document.getElementById('offerPopupBackdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='offerPopupBackdrop') e.currentTarget.classList.remove('show');
+});
+
 loadData();
 </script>
 </body>
