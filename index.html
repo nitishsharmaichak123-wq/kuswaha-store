@@ -730,9 +730,14 @@ function renderMyOrders(){
   }
   const sorted = myOrders.slice().sort((a,b)=>b.createdAt-a.createdAt);
   wrap.innerHTML = sorted.map(o=>`
-    <div class="order-item">
-      <div class="oh"><span class="oname">${esc(o.productName)}</span><span class="otime">${new Date(o.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>
-      <div class="oitems">Quantity: ${o.qty} × ₹${o.price} = <strong>₹${o.total}</strong></div>
+    <div class="order-item" style="display:flex; gap:12px; align-items:center;">
+      <div style="width:48px; height:48px; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,#fdeecb,#f7d9a0); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+        ${o.productPhoto ? `<img src="${o.productPhoto}" style="width:100%; height:100%; object-fit:cover;">` : (CAT_ICON[o.productCat] || '🛍️')}
+      </div>
+      <div style="flex:1;">
+        <div class="oh"><span class="oname">${esc(o.productName)}</span><span class="otime">${new Date(o.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>
+        <div class="oitems">Quantity: ${o.qty} × ₹${o.price} = <strong>₹${o.total}</strong></div>
+      </div>
     </div>
   `).join('');
 }
@@ -852,6 +857,8 @@ document.getElementById('placeOrderBtn').addEventListener('click', async ()=>{
   const order = {
     id: 'o_' + Date.now(),
     productName: activeProduct.name,
+    productPhoto: activeProduct.photo || '',
+    productCat: activeProduct.cat,
     qty: orderQty,
     price: activeProduct.price,
     total,
@@ -1003,9 +1010,14 @@ function renderOwnerOrders(){
   }
   const sorted = orders.slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,20);
   wrap.innerHTML = sorted.map(o=>`
-    <div class="order-item">
-      <div class="oh"><span class="oname">${esc(o.custName)}</span><span class="otime">${new Date(o.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>
-      <div class="oitems">${esc(o.productName)} × ${o.qty} — ₹${o.total}<br>📞 ${esc(o.custPhone)}${o.landmark ? ' · ' + esc(o.landmark) : ''}</div>
+    <div class="order-item" style="display:flex; gap:12px; align-items:center;">
+      <div style="width:48px; height:48px; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,#fdeecb,#f7d9a0); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+        ${o.productPhoto ? `<img src="${o.productPhoto}" style="width:100%; height:100%; object-fit:cover;">` : (CAT_ICON[o.productCat] || '🛍️')}
+      </div>
+      <div style="flex:1;">
+        <div class="oh"><span class="oname">${esc(o.custName)}</span><span class="otime">${new Date(o.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div class="oitems">${esc(o.productName)} × ${o.qty} — ₹${o.total}<br>📞 ${esc(o.custPhone)}${o.landmark ? ' · ' + esc(o.landmark) : ''}</div>
+      </div>
     </div>
   `).join('');
 }
