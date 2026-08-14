@@ -592,6 +592,9 @@ async function fbSet(path, value){
   }catch(e){}
 }
 
+let knownOrderIds = new Set();
+let knownOrderIdsInit = false;
+
 function renderOfferBanner(){
   const banner = document.getElementById('offerBanner');
   if(offer && offer.active && offer.text){
@@ -646,6 +649,21 @@ setInterval(async ()=>{
   await cleanupOldOrders();
   const freshOffer = await fbGet('offer', null);
   if(freshOffer) offer = freshOffer;
+
+  if(ownerLoggedIn && knownOrderIdsInit){
+    const newOnes = orders.filter(o => !knownOrderIds.has(o.id));
+    if(newOnes.length > 0 && 'Notification' in window && Notification.permission === 'granted'){
+      newOnes.forEach(o=>{
+        new Notification('🔔 Naya Order Aaya!', {
+          body: `${o.productName} × ${o.qty} — ₹${o.total} (${o.custName})`,
+          icon: 'icon-192.png'
+        });
+      });
+    }
+  }
+  knownOrderIds = new Set(orders.map(o=>o.id));
+  knownOrderIdsInit = true;
+
   if(currentView === 'home'){ renderProductGrid(); renderOfferBanner(); }
   if(currentView === 'owner' && ownerLoggedIn){ renderOwnerProductList(); renderOwnerOrders(); renderOwnerStats(); }
 }, 15000);
@@ -966,6 +984,13 @@ function showOwnerDash(){
   renderOwnerStats();
   renderOwnerProductList();
   renderOwnerOrders();
+  if(!knownOrderIdsInit){
+    knownOrderIds = new Set(orders.map(o=>o.id));
+    knownOrderIdsInit = true;
+  }
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
 }
 function renderOwnerStats(){
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
