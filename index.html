@@ -309,6 +309,7 @@
     <div class="hero-overlay"></div>
     <div class="hero-top">
       <button class="icon-btn" id="ownerBtn" aria-label="Owner login">🔒</button>
+      <button class="icon-btn" id="profileBtn" aria-label="Mera Profile">👤</button>
       <button class="icon-btn" id="favBtn" aria-label="Favorites">❤️</button>
     </div>
     <div class="hero-content">
@@ -445,6 +446,29 @@
     </div>
   </div>
 
+  <!-- MY PROFILE (private, this device only) -->
+  <div class="sheet-backdrop" id="profileBackdrop">
+    <div class="sheet" style="position:relative;">
+      <button class="sheet-close" id="profileClose">✕</button>
+      <div class="sheet-handle"></div>
+      <div class="section-title" style="padding:0 0 6px;">Mera Profile 👤</div>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 16px;">Ye sirf aapke phone par private rehta hai. Order karte waqt apne aap bhar jayega.</p>
+      <label>Photo (optional)</label>
+      <div class="photo-upload" id="profilePhotoBox">
+        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;">
+        <button class="btn btn-outline btn-sm" id="profilePhotoBtn" type="button">📷 Photo chuno</button>
+        <div id="profilePhotoPreviewWrap"></div>
+      </div>
+      <label>Naam</label>
+      <input type="text" id="profileNameInput" placeholder="Aapka naam">
+      <label>Phone number</label>
+      <input type="tel" id="profilePhoneInput" placeholder="Mobile number">
+      <label>Ghar ka pata / Galli</label>
+      <input type="text" id="profileAddressInput" placeholder="Jaise: Mandir wali galli, Simariya">
+      <button class="btn btn-saffron" id="profileSaveBtn">Profile Save karo</button>
+    </div>
+  </div>
+
   <!-- OWNER LOGIN -->
   <div class="sheet-backdrop" id="ownerLoginBackdrop">
     <div class="sheet" style="position:relative;">
@@ -558,6 +582,8 @@ let userLocation = null;
 let timerInterval = null;
 let myOrders = [];
 let offer = { active:false, text:"" };
+let customerProfile = { name:"", phone:"", address:"", photo:"" };
+let pendingProfilePhoto = "";
 
 /* ===================== STORAGE ===================== */
 /* Products & Orders sync via Firebase (shared across every phone).
@@ -628,6 +654,7 @@ async function loadData(){
   favorites = lsGet('kgs_favorites', []);
   ownerLoggedIn = lsGet('kgs_ownerSession', false) === true;
   myOrders = lsGet('kgs_myOrders', []);
+  customerProfile = lsGet('kgs_customerProfile', { name:"", phone:"", address:"", photo:"" });
 
   renderProductGrid();
   renderOfferBanner();
@@ -800,6 +827,54 @@ document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click', ()=
 document.getElementById('favBtn').addEventListener('click', ()=>switchView('fav'));
 document.getElementById('ownerBtn').addEventListener('click', ()=>switchView('owner'));
 
+/* ===================== MY PROFILE ===================== */
+document.getElementById('profileBtn').addEventListener('click', ()=>{
+  pendingProfilePhoto = customerProfile.photo || "";
+  document.getElementById('profileNameInput').value = customerProfile.name || "";
+  document.getElementById('profilePhoneInput').value = customerProfile.phone || "";
+  document.getElementById('profileAddressInput').value = customerProfile.address || "";
+  document.getElementById('profilePhotoPreviewWrap').innerHTML = pendingProfilePhoto ? `<img src="${pendingProfilePhoto}">` : '';
+  document.getElementById('profileBackdrop').classList.add('show');
+});
+document.getElementById('profileClose').addEventListener('click', ()=>document.getElementById('profileBackdrop').classList.remove('show'));
+document.getElementById('profileBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='profileBackdrop') e.currentTarget.classList.remove('show'); });
+
+document.getElementById('profilePhotoBtn').addEventListener('click', ()=>document.getElementById('profilePhotoInput').click());
+document.getElementById('profilePhotoInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      const maxDim = 400;
+      let w = img.width, h = img.height;
+      if(w > h && w > maxDim){ h = h*(maxDim/w); w = maxDim; }
+      else if(h > maxDim){ w = w*(maxDim/h); h = maxDim; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      pendingProfilePhoto = canvas.toDataURL('image/jpeg', 0.85);
+      document.getElementById('profilePhotoPreviewWrap').innerHTML = `<img src="${pendingProfilePhoto}">`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('profileSaveBtn').addEventListener('click', async ()=>{
+  customerProfile = {
+    name: document.getElementById('profileNameInput').value.trim(),
+    phone: document.getElementById('profilePhoneInput').value.trim(),
+    address: document.getElementById('profileAddressInput').value.trim(),
+    photo: pendingProfilePhoto
+  };
+  lsSet('kgs_customerProfile', customerProfile);
+  document.getElementById('profileBackdrop').classList.remove('show');
+  toast('Profile save ho gaya!');
+});
+
+
 document.querySelectorAll('.cat-tabs .cat-tab[data-cat]').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     document.querySelectorAll('.cat-tabs .cat-tab[data-cat]').forEach(t=>t.classList.remove('active'));
@@ -839,6 +914,9 @@ document.getElementById('pdOrderBtn').addEventListener('click', ()=>{
   userLocation = null;
   document.getElementById('locStatus').className = 'loc-status pending';
   document.getElementById('locStatus').textContent = '📍 Location abhi tak nahi mila — button dabao';
+  document.getElementById('custName').value = customerProfile.name || '';
+  document.getElementById('custPhone').value = customerProfile.phone || '';
+  document.getElementById('custLandmark').value = customerProfile.address || '';
   document.getElementById('orderBackdrop').classList.add('show');
 });
 
@@ -895,6 +973,7 @@ document.getElementById('placeOrderBtn').addEventListener('click', async ()=>{
     total,
     custName: name,
     custPhone: phone,
+    custPhoto: customerProfile.photo || '',
     landmark,
     mapsLink: userLocation ? `https://www.google.com/maps?q=${userLocation.lat},${userLocation.lng}` : '',
     createdAt: Date.now()
@@ -1048,9 +1127,10 @@ function renderOwnerOrders(){
   }
   const sorted = orders.slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,20);
   wrap.innerHTML = sorted.map(o=>`
-    <div class="order-item" style="display:flex; gap:12px; align-items:center;">
-      <div style="width:48px; height:48px; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,#fdeecb,#f7d9a0); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+    <div class="order-item" style="display:flex; gap:10px; align-items:center;">
+      <div style="width:48px; height:48px; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,#fdeecb,#f7d9a0); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; position:relative;">
         ${o.productPhoto ? `<img src="${o.productPhoto}" style="width:100%; height:100%; object-fit:cover;">` : (CAT_ICON[o.productCat] || '🛍️')}
+        ${o.custPhoto ? `<img src="${o.custPhoto}" style="position:absolute; bottom:-4px; right:-4px; width:22px; height:22px; border-radius:50%; border:2px solid #fff; object-fit:cover;">` : ''}
       </div>
       <div style="flex:1;">
         <div class="oh"><span class="oname">${esc(o.custName)}</span><span class="otime">${new Date(o.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>
