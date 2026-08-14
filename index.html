@@ -56,6 +56,16 @@
   .splash-dots span:nth-child(2){animation-delay:0.2s;}
   .splash-dots span:nth-child(3){animation-delay:0.4s;}
   @keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
+  @keyframes cardIn{from{opacity:0; transform:translateY(14px) scale(0.96);}to{opacity:1; transform:translateY(0) scale(1);}}
+  @keyframes heartPop{0%{transform:scale(1);}35%{transform:scale(1.5);}60%{transform:scale(0.9);}100%{transform:scale(1);}}
+  @keyframes popIn{from{opacity:0; transform:scale(0.85) translateY(12px);}to{opacity:1; transform:scale(1) translateY(0);}}
+  @keyframes shimmerMove{0%{background-position:-400px 0;}100%{background-position:400px 0;}}
+  @keyframes tabPulse{0%{transform:scale(1);}50%{transform:scale(1.06);}100%{transform:scale(1);}}
+  @keyframes checkPop{0%{transform:scale(0) rotate(-20deg); opacity:0;}60%{transform:scale(1.2) rotate(6deg); opacity:1;}100%{transform:scale(1) rotate(0); opacity:1;}}
+  @keyframes bannerSlide{from{opacity:0; transform:translateY(-10px);}to{opacity:1; transform:translateY(0);}}
+  .fade-view{animation:cardIn 0.25s ease both;}
+  .heart-pop{animation:heartPop 0.35s ease;}
+  .cat-tab.just-tapped{animation:tabPulse 0.25s ease;}
 
   /* ---------- HOME HERO ---------- */
   .hero{
@@ -73,6 +83,7 @@
     background:linear-gradient(135deg,#ffb703,#e8622c 60%,#a8331a);
     color:#fff; display:flex; align-items:center; gap:10px;
     box-shadow:0 4px 14px rgba(184,71,28,0.35);
+    animation:bannerSlide 0.35s ease both;
   }
   .offer-banner .oi{font-size:22px;}
   .offer-banner .ot{font-size:13.5px; font-weight:700; line-height:1.35;}
@@ -84,7 +95,7 @@
     display:none; align-items:center; justify-content:center; padding:24px 16px;
   }
   .offer-popup-backdrop.show{display:flex;}
-  .offer-popup{position:relative; max-width:400px; width:100%;}
+  .offer-popup{position:relative; max-width:400px; width:100%; animation:popIn 0.4s cubic-bezier(.34,1.56,.64,1);}
   .offer-popup img{width:100%; display:block; border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,0.5);}
   .offer-popup-close{
     position:absolute; top:-14px; right:-14px; width:38px; height:38px; border-radius:50%;
@@ -167,7 +178,10 @@
     display:flex;border-top:1px solid var(--line);padding:8px 6px calc(8px + env(safe-area-inset-bottom));
     z-index:40;
   }
-  .nav-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;color:var(--ink-soft);font-size:10.5px;font-weight:600;font-family:inherit;cursor:pointer;}
+  .nav-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;color:var(--ink-soft);font-size:10.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:transform 0.15s ease, color 0.15s ease;}
+  .nav-btn:active{transform:scale(0.88);}
+  .nav-btn .ic{transition:transform 0.2s cubic-bezier(.34,1.56,.64,1);}
+  .nav-btn.active .ic{transform:scale(1.15) translateY(-1px);}
   .nav-btn .ic{font-size:19px;}
   .nav-btn.active{color:var(--saffron-dark);}
 
@@ -222,7 +236,7 @@
 
   /* ---------- THANK YOU ---------- */
   .thankyou{text-align:center;padding:30px 10px 10px;}
-  .ty-icon{width:76px;height:76px;border-radius:50%;background:#eaf5ea;color:var(--leaf-dark);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 16px;}
+  .ty-icon{width:76px;height:76px;border-radius:50%;background:#eaf5ea;color:var(--leaf-dark);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 16px; animation:checkPop 0.5s cubic-bezier(.34,1.56,.64,1);}
   .ty-title{font-family:Georgia,serif;font-size:24px;margin:0 0 6px;color:var(--leaf-dark);}
   .ty-sub{font-size:13.5px;color:var(--ink-soft);margin-bottom:22px;}
   .timer-ring{width:120px;height:120px;border-radius:50%;border:6px solid var(--line);border-top-color:var(--saffron);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:spin 3s linear infinite;}
@@ -238,7 +252,7 @@
   .pin-input{text-align:center;letter-spacing:10px;font-size:22px;font-weight:800;}
 
   .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;}
-  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px; animation:cardIn 0.3s ease both;}
   .stat-num{font-size:24px;font-weight:800;color:var(--saffron-dark);}
   .stat-lb{font-size:11.5px;color:var(--ink-soft);font-weight:600;}
 
@@ -649,7 +663,8 @@ function renderProductGrid(){
     return;
   }
   grid.innerHTML = list.map(p => productCardHtml(p)).join('');
-  grid.querySelectorAll('.p-card').forEach(el=>{
+  grid.querySelectorAll('.p-card').forEach((el,i)=>{
+    el.style.animation = `cardIn 0.32s ease ${Math.min(i*0.05,0.4)}s both`;
     el.addEventListener('click', (e)=>{
       if(e.target.closest('.fav-heart')) return;
       openProductDetail(el.dataset.id);
@@ -659,6 +674,7 @@ function renderProductGrid(){
     el.addEventListener('click', (e)=>{
       e.stopPropagation();
       toggleFavorite(el.dataset.id);
+      el.classList.add('heart-pop');
       renderProductGrid();
     });
   });
@@ -752,6 +768,9 @@ document.querySelectorAll('.cat-tabs .cat-tab[data-cat]').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     document.querySelectorAll('.cat-tabs .cat-tab[data-cat]').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
+    tab.classList.remove('just-tapped');
+    void tab.offsetWidth;
+    tab.classList.add('just-tapped');
     currentCat = tab.dataset.cat;
     renderProductGrid();
   });
