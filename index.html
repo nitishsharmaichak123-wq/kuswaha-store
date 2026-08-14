@@ -602,6 +602,17 @@ function renderOfferBanner(){
   }
 }
 
+const ORDER_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+async function cleanupOldOrders(){
+  const cutoff = Date.now() - ORDER_MAX_AGE_MS;
+  const before = orders.length;
+  orders = orders.filter(o => o.createdAt >= cutoff);
+  if(orders.length !== before){
+    await saveOrders();
+  }
+}
+
 async function loadData(){
   products = await fbGet('products', null);
   if(!products || products.length===0){
@@ -609,6 +620,7 @@ async function loadData(){
     fbSet('products', products);
   }
   orders = await fbGet('orders', []);
+  await cleanupOldOrders();
   offer = await fbGet('offer', { active:false, text:"" });
   favorites = lsGet('kgs_favorites', []);
   ownerLoggedIn = lsGet('kgs_ownerSession', false) === true;
@@ -631,6 +643,7 @@ setInterval(async ()=>{
   if(freshProducts) products = freshProducts;
   const freshOrders = await fbGet('orders', null);
   if(freshOrders) orders = freshOrders;
+  await cleanupOldOrders();
   const freshOffer = await fbGet('offer', null);
   if(freshOffer) offer = freshOffer;
   if(currentView === 'home'){ renderProductGrid(); renderOfferBanner(); }
